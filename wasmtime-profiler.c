@@ -108,19 +108,16 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // sleep to wait for the profiler to start
+
+    usleep(100000);
+
     // Run the module
     error = wasmtime_func_call(context, &func, NULL, 0, NULL, 0, &trap);
+
     if (error != NULL || trap != NULL) {
-        exit_with_error("error calling default export", error, trap);
+        return 1;
     }
-
-    // stop profiling after the _start() returns
-    // kill(new_pid, SIGINT);
-
-    // Clean up after ourselves at this point
-    wasmtime_module_delete(module);
-    wasmtime_store_delete(store);
-    wasm_engine_delete(engine);
     return 0;
 }
 
