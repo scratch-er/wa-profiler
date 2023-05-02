@@ -18,20 +18,31 @@ profilers = sys.argv[1:delimiter]
 modules = sys.argv[delimiter+1:]
 
 stats = {}
+try:
+    logfile = open("profiler.log", "at")
+except:
+    logfile = open("profiler.log", "wt")
 
 for profiler in profilers:
     stat = {}
     for module in modules:
-        cmd = [profiler, module, "perf", "stat", "-p", "PID", "-x,", "-e", "cycles,instructions,branches,branch-misses,cache-references,cache-misses"]
+        logfile.write("{}: {}\n".format(profiler, module))
+        cmd = [profiler, module, "perf", "stat", "-p", "PID", "-x,", "-e", "cycles,instructions,branches,branch-misses,L1-dcache-loads,L1-dcache-load-misses"]
         child = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         child.wait()
         outputs = child.stderr.readlines()
         for line in outputs:
+            logfile.write(line.decode("utf-8"))
             fileds = line.decode("utf-8").split(",")
             k = fileds[2]
-            v = int(fileds[0])
+            try:
+                v = int(fileds[0])
+            except:
+                v = 0
             stat[k] = stat.get(k, 0) + v
     stats[profiler] = stat
+
+logfile.close()
 
 print(stats)
 print()
@@ -41,5 +52,5 @@ for k, v in stats.items():
     cycles = v["cycles:u"]
     instructions = v["instructions:u"]
     branch_misses = v["branch-misses:u"] / v["branches:u"]
-    cache_misses = v["cache-misses:u"] / v["cache-references:u"]
+    cache_misses = v["L1-dcache-load-misses:u"] / v["L1-dcache-loads:u"]
     print("|{}|{}|{}|{}|{}|".format(k, cycles, instructions, branch_misses, cache_misses))
